@@ -8,6 +8,8 @@ fun vec(x : Float, y: Float) : PVector
     return PVector(x, y);
 }
 
+fun vec(x: Int, y: Int) = PVector(x.toFloat(), y.toFloat())
+
 fun add(u: PVector, v: PVector) : PVector
 {
     return PVector(u.x + v.x, u.y + v.y);

@@ -28,6 +28,9 @@ class World
         origins.add(origin)
         return origin
     }
+
+    fun pickNode(position: PVector, radius: Float)
+        = nodes.find { n -> distSq(n.position, position) <= radius * radius }
 }
 
 class WorldNode(var position: PVector)
