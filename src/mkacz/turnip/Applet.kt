@@ -15,6 +15,7 @@ class Applet : PApplet()
         const val NODE_RADIUS = 10.0f
         const val HOVER_NODE_RADIUS = 11.0f
         const val ACTIVE_NODE_RADIUS = 12.0f
+        const val SEGMENT_RANGE = 40.0f
         val SELECT_BUTTON = PApplet.LEFT
     }
 
@@ -22,8 +23,7 @@ class Applet : PApplet()
     val world = World()
     var dt = 0.0f
     var activeNode: WorldNode? = null
-
-    var hoverNode: WorldNode? = null
+    var activeSegment: WorldSegment? = null
 
     override fun settings()
     {
@@ -62,27 +62,26 @@ class Applet : PApplet()
         if (mode == Mode.EDIT_WORLD)
         {
             ellipseMode(RADIUS)
+            noFill()
             for (node in world.nodes)
             {
-                when
+                if (node == activeNode)
                 {
-                    node == activeNode ->
-                    {
-                        fill(color(168, 86, 72))
-                        ellipse(node.position, ACTIVE_NODE_RADIUS)
-                    }
-                    node == hoverNode ->
-                    {
-                        fill(color(255))
-                        ellipse(node.position, HOVER_NODE_RADIUS)
-                    }
-                    else ->
-                    {
-                        noFill()
-                        ellipse(node.position, NODE_RADIUS)
-                    }
+                    fill(color(168, 86, 72))
+                    ellipse(node.position, ACTIVE_NODE_RADIUS)
+                    noFill()
+                }
+                else
+                {
+                    ellipse(node.position, NODE_RADIUS)
                 }
             }
+        }
+
+        if (activeSegment != null)
+        {
+            strokeWeight(3.0f)
+            line(activeSegment!!.start.position, activeSegment!!.end.position)
         }
     }
 
@@ -111,11 +110,9 @@ class Applet : PApplet()
         if (mode == Mode.EDIT_WORLD && mouseButton == SELECT_BUTTON)
         {
             val m = vec(mouseX, mouseY)
-            val node = world.pickNode(m, NODE_RADIUS)
-            if (node == null)
-                activeNode = activeNode?.insertAdaptive(m) ?: world.addOrigin(m)
-            else
-                activeNode = node
+            activeNode = world.pickNode(m, NODE_RADIUS)
+                ?: world.pickSegment(m, SEGMENT_RANGE)?.insertNode(m)
+                ?: world.addOrigin(m)
         }
     }
 
@@ -130,7 +127,11 @@ class Applet : PApplet()
     override fun mouseMoved()
     {
         if (mode == Mode.EDIT_WORLD)
-            hoverNode = world.pickNode(vec(mouseX, mouseY), NODE_RADIUS)
+        {
+            val m = vec(mouseX, mouseY)
+            activeNode = world.pickNode(m, NODE_RADIUS)
+            activeSegment = if (activeNode == null) world.pickSegment(m, SEGMENT_RANGE) else null
+        }
     }
 
     fun line(p0: PVector, p1: PVector) { line(p0.x, p0.y, p1.x, p1.y); }

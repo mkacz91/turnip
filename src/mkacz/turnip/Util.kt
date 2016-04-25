@@ -80,3 +80,18 @@ fun angle(u: PVector) : Float
 {
     return PApplet.atan2(u.y, u.x);
 }
+
+fun sq(x: Float) = x * x
+
+fun min(x: Float, y: Float) = if (x < y) x else y
+
+fun pointToSegmentDistSq(a: PVector, b: PVector, p: PVector) : Float
+{
+    val ab = span(a, b)
+    val pa = span(p, a)
+    val pb = span(p, b)
+    return if (dot(ab, pa) * dot(ab, pb) < 0)
+        sq(per(pa, pb)) / lengthSq(ab)
+    else
+        min(lengthSq(pa), lengthSq(pb))
+}

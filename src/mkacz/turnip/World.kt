@@ -9,18 +9,24 @@ class World
 {
     val origins = ArrayList<WorldNode>()
 
-    val nodes = object : Iterable<WorldNode> { override operator fun iterator() = object : Iterator<WorldNode>
+    val nodes = object : Iterable<WorldNode>
     {
-        var origIt = origins.iterator()
-        var loopIt = Collections.emptyIterator<WorldNode>()
-        override operator fun hasNext() = loopIt.hasNext() || origIt.hasNext()
-        override operator fun next() : WorldNode
+        override operator fun iterator() = object : Iterator<WorldNode>
         {
-            if (!loopIt.hasNext())
-                loopIt = origIt.next().nodeLoop.iterator()
-            return loopIt.next()
+            var origIt = origins.iterator()
+            var loopIt = Collections.emptyIterator<WorldNode>()
+            override operator fun hasNext() = loopIt.hasNext() || origIt.hasNext()
+            override operator fun next() : WorldNode
+            {
+                if (!loopIt.hasNext())
+                    loopIt = origIt.next().nodeLoop.iterator()
+                return loopIt.next()
+            }
         }
-    }}
+    }
+
+    val segments: Iterable<WorldSegment>
+        get() = nodes.map { n -> WorldSegment(n, n.succ) }
 
     fun addOrigin(position: PVector) : WorldNode
     {
@@ -31,6 +37,12 @@ class World
 
     fun pickNode(position: PVector, radius: Float)
         = nodes.find { n -> distSq(n.position, position) <= radius * radius }
+
+    fun pickSegment(position: PVector, radius: Float ) : WorldSegment?
+    {
+        val s = segments.minBy { s -> s.distSq(position) }
+        return if (s != null && s.distSq(position) <= radius * radius) s else null
+    }
 }
 
 class WorldNode(var position: PVector)
@@ -46,12 +58,16 @@ class WorldNode(var position: PVector)
 
     private constructor(succ: WorldNode) : this(PVector(), succ, succ) { }
 
-    val nodeLoop = object : Iterable<WorldNode> { override operator fun iterator() = object : Iterator<WorldNode> {
-        val last = pred
-        var node = WorldNode(this@WorldNode)
-        override operator fun hasNext() = node != last
-        override operator fun next() : WorldNode { node = node.succ; return node }
-    }}
+    val nodeLoop = object : Iterable<WorldNode>
+    {
+        override operator fun iterator() = object : Iterator<WorldNode>
+        {
+            val last = pred
+            var node = WorldNode(this@WorldNode)
+            override operator fun hasNext() = node != last
+            override operator fun next() : WorldNode { node = node.succ; return node }
+        }
+    }
 
     fun insertPred(position: PVector) : WorldNode
     {
@@ -68,12 +84,11 @@ class WorldNode(var position: PVector)
         succ = node
         return node
     }
+}
 
-    fun insertAdaptive(position: PVector) : WorldNode
-    {
-        if (distSq(position, pred.position) < distSq(position, succ.position))
-            return insertPred(position)
-        else
-            return insertSucc(position)
-    }
+data class WorldSegment(val start: WorldNode, val end: WorldNode)
+{
+    fun insertNode(position: PVector) = start.insertSucc(position)
+
+    fun distSq(position: PVector) = pointToSegmentDistSq(start.position, end.position, position)
 }
