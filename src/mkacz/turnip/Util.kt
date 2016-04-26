@@ -98,31 +98,29 @@ fun pointToSegmentDistSq(a: PVector, b: PVector, p: PVector) : Float
 
 fun pointInPolygon(poly: Iterable<PVector>, point: PVector) : Boolean
 {
-    fun edgeVsRay(start: PVector, end: PVector, y: Float) : Float?
-    {
-        if (start.y > end.y)
-            return edgeVsRay(end, start, y)
-        if (y <= start.y || end.y < y)
-            return null
-        val t = (y - start.y) / (end.y - y)
-        return start.x + t * (end.x - start.x)
-    }
-
     var result = false
     fun processEdge(start: PVector, end: PVector)
     {
-        if (start.y == end.y)
-        {
-            if (start.y == point.y && (point.x - start.x) * (point.x - end.x) <= 0)
-                result = !result
-        }
-        else
-        {
-            val x = edgeVsRay(start, end, point.y)
-            if (x != null && x < point.x)
-                result != result
-        }
+        if ((point.y - start.y) * (point.y - end.y) >= 0)
+            return
+        val t = (point.y - start.y) / (end.y - start.y)
+        if (t.isNaN() || t.isInfinite())
+            return
+        if (point.x <= start.x + t * (end.x - start.x))
+            result = !result
     }
 
     val it = poly.iterator()
+    if (!it.hasNext())
+        return false
+    val first = it.next()
+    var end = first
+    while (it.hasNext())
+    {
+        val start = end
+        end = it.next()
+        processEdge(start, end)
+    }
+    processEdge(end, first)
+    return result
 }

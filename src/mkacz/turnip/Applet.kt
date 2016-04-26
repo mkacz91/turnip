@@ -13,10 +13,29 @@ class Applet : PApplet()
     companion object
     {
         const val NODE_RADIUS = 10.0f
-        const val HOVER_NODE_RADIUS = 11.0f
-        const val ACTIVE_NODE_RADIUS = 12.0f
-        const val SEGMENT_RANGE = 40.0f
+        const val ACTIVE_NODE_RADIUS = 11.0f
         val SELECT_BUTTON = PApplet.LEFT
+        val CLEAR_BUTTON = PApplet.RIGHT
+
+        fun pickLoop(world: World, position: PVector)
+            = world.loops.find { l -> l.contains(position) }
+
+        fun pickSegment(loop: WorldLoop, position: PVector)
+            = loop.segments.minBy { s -> s.distSq(position) }!!
+
+        fun pickNode(world: World, position: PVector, radius: Float) : Pair<WorldLoop, WorldNode>?
+        {
+            val radiusSq = radius * radius
+            for (loop in world.loops)
+            {
+                for (node in loop.nodes)
+                {
+                    if (node.distSq(position) <= radiusSq)
+                        return Pair(loop, node)
+                }
+            }
+            return null
+        }
     }
 
     val guy = Guy()
@@ -24,6 +43,7 @@ class Applet : PApplet()
     var dt = 0.0f
     var activeNode: WorldNode? = null
     var activeSegment: WorldSegment? = null
+    var activeLoop: WorldLoop? = null
 
     override fun settings()
     {
@@ -49,11 +69,12 @@ class Applet : PApplet()
 
         noStroke()
         fill(color(229, 117, 99))
-        for (origin in world.origins)
+        for (loop in world.loops)
         {
+            fill(if (loop == activeLoop) color(215, 100, 80) else color(229, 117, 99))
             beginShape()
-            for (node in origin.nodeLoop)
-                vertex(node.position)
+            for (position in loop.positions)
+                vertex(position)
             endShape(CLOSE)
         }
 
@@ -109,10 +130,32 @@ class Applet : PApplet()
     {
         if (mode == Mode.EDIT_WORLD && mouseButton == SELECT_BUTTON)
         {
+            activeSegment = null
             val m = vec(mouseX, mouseY)
-            activeNode = world.pickNode(m, NODE_RADIUS)
-                ?: world.pickSegment(m, SEGMENT_RANGE)?.insertNode(m)
-                ?: world.addOrigin(m)
+            val nl = pickNode(world, m, NODE_RADIUS)
+            if (nl != null)
+            {
+                activeLoop = nl.first
+                activeNode = nl.second
+                return
+            }
+            val loop = pickLoop(world, m)
+            if (loop != null && loop != activeLoop)
+            {
+                activeLoop = loop
+                return
+            }
+            if (activeLoop == null)
+            {
+                activeLoop = world.addLoop(m)
+                activeNode = activeLoop!!.origin
+                return
+            }
+            activeNode = pickSegment(activeLoop!!, m).insertNode(m)
+        }
+        else if (mode == Mode.EDIT_WORLD && mouseButton == CLEAR_BUTTON)
+        {
+            activeLoop = null
         }
     }
 
@@ -128,9 +171,23 @@ class Applet : PApplet()
     {
         if (mode == Mode.EDIT_WORLD)
         {
+            activeNode = null
+            activeSegment = null
             val m = vec(mouseX, mouseY)
-            activeNode = world.pickNode(m, NODE_RADIUS)
-            activeSegment = if (activeNode == null) world.pickSegment(m, SEGMENT_RANGE) else null
+            val nl = pickNode(world, m, NODE_RADIUS)
+            if (nl != null)
+            {
+                activeLoop = nl.first
+                activeNode = nl.second
+                activeSegment = null
+                return
+            }
+            if (activeLoop == null)
+            {
+                activeLoop = pickLoop(world, m)
+                return
+            }
+            activeSegment = pickSegment(activeLoop!!, m)
         }
     }
 
