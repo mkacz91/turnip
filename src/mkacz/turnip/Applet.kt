@@ -24,26 +24,11 @@ class Applet : PApplet()
         fun nearestSegment(world: World, position: PVector)
             = world.segments.minBy { s -> s.distSq(position) }
 
-        data class NodeLoopPair(val node: WorldNode, val loop: WorldLoop)
-        fun pickNodeWithLoop(world: World, position: PVector, radius: Float) : NodeLoopPair?
-        {
-            val radiusSq = radius * radius
-            for (loop in world.loops)
-            {
-                for (node in loop.nodes)
-                {
-                    if (node.distSq(position) <= radiusSq)
-                        return NodeLoopPair(node, loop)
-                }
-            }
-            return null
-        }
-
         fun pickNode(world: World, position: PVector, radius: Float)
             = world.nodes.find { n -> n.distSq(position) <= radius * radius }
     }
 
-    val guy = Guy()
+    //val guy = Guy()
     val world = World()
     var dt = 0.0f
     var insertSegment: WorldSegment? = null
@@ -71,6 +56,7 @@ class Applet : PApplet()
 
         background(color(252, 216, 210))
 
+        strokeWeight(2.0f)
         noStroke()
         fill(color(229, 117, 99))
         for (loop in world.loops)
@@ -82,10 +68,22 @@ class Applet : PApplet()
                 else -> color(0, 0, 255)
             }
             fill(fillColor)
+
+            var nodeCount = 0
             beginShape()
             for (position in loop.positions)
+            {
                 vertex(position)
+                ++nodeCount
+            }
             endShape(CLOSE)
+
+            if (nodeCount == 2)
+            {
+                stroke(fillColor)
+                line(loop.origin.position, loop.origin.succ.position)
+                noStroke()
+            }
         }
 
         if (mode == Mode.EDIT_WORLD)
