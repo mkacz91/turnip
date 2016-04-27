@@ -13,17 +13,22 @@ class Applet : PApplet()
     companion object
     {
         const val NODE_RADIUS = 10.0f
+        const val NODE_PICK_RADIUS = 10.0f
         const val ACTIVE_NODE_RADIUS = 11.0f
+        const val SEGMENT_PICK_RADIUS = 5.0f;
         val SELECT_BUTTON = PApplet.LEFT
         val CLEAR_BUTTON = PApplet.RIGHT
 
         fun pickLoop(world: World, position: PVector)
             = world.loops.find { l -> l.contains(position) }
 
+
+
         fun pickSegment(loop: WorldLoop, position: PVector)
             = loop.segments.minBy { s -> s.distSq(position) }!!
 
-        fun pickNode(world: World, position: PVector, radius: Float) : Pair<WorldLoop, WorldNode>?
+        data class NodeLoopPair(val node: WorldNode, val loop: WorldLoop)
+        fun pickNodeWithLoop(world: World, position: PVector, radius: Float) : NodeLoopPair?
         {
             val radiusSq = radius * radius
             for (loop in world.loops)
@@ -31,19 +36,30 @@ class Applet : PApplet()
                 for (node in loop.nodes)
                 {
                     if (node.distSq(position) <= radiusSq)
-                        return Pair(loop, node)
+                        return NodeLoopPair(node, loop)
                 }
             }
             return null
         }
+
+        fun pickNode(world: World, position: PVector, radius: Float)
+            = world.nodes.find { n -> n.distSq(position) <= radius * radius }
+
+        fun pickSegment(world: World, position: PVector, radius: Float)
+            = world.segments.find { s -> s.distSq(position) <= radius * radius }
     }
 
     val guy = Guy()
     val world = World()
     var dt = 0.0f
-    var activeNode: WorldNode? = null
-    var activeSegment: WorldSegment? = null
+    var hoverNode: WorldNode? = null
+    var grabNode: WorldNode? = null
+    var insertSegment: WorldSegment? = null
+    var hoverSegment: WorldSegment? = null
+    var grabSegment: WorldSegment? = null
+    var hoverLoop: WorldLoop? = null
     var activeLoop: WorldLoop? = null
+    var grabLoop: WorldLoop? = null
 
     override fun settings()
     {
@@ -67,11 +83,19 @@ class Applet : PApplet()
 
         // Draw world
 
+        // Loops
         noStroke()
         fill(color(229, 117, 99))
         for (loop in world.loops)
         {
-            fill(if (loop == activeLoop) color(215, 100, 80) else color(229, 117, 99))
+            val fillColor = when (loop)
+            {
+                hoverLoop -> color(255, 0, 0)
+                activeLoop -> color(0, 255, 0)
+                grabLoop -> color(0, 0, 255)
+                else -> color(255, 255, 0)
+            }
+            fill(fillColor)
             beginShape()
             for (position in loop.positions)
                 vertex(position)
@@ -86,10 +110,16 @@ class Applet : PApplet()
             noFill()
             for (node in world.nodes)
             {
-                if (node == activeNode)
+                val fillColor = when (node)
                 {
-                    fill(color(168, 86, 72))
-                    ellipse(node.position, ACTIVE_NODE_RADIUS)
+                    hoverNode -> color(255, 0, 0)
+                    grabNode -> color(0, 255, 0)
+                    else -> null
+                }
+                if (fillColor != null)
+                {
+                    fill(fillColor)
+                    ellipse(node.position, NODE_RADIUS)
                     noFill()
                 }
                 else
@@ -99,10 +129,21 @@ class Applet : PApplet()
             }
         }
 
-        if (activeSegment != null)
+        strokeWeight(3.0f)
+        if (hoverSegment != null)
         {
-            strokeWeight(3.0f)
-            line(activeSegment!!.start.position, activeSegment!!.end.position)
+            stroke(0)
+            line(hoverSegment!!.start.position, hoverSegment!!.end.position)
+        }
+        if (grabSegment != null)
+        {
+            stroke(128)
+            line(grabSegment!!.start.position, grabSegment!!.end.position)
+        }
+        if (insertSegment != null)
+        {
+            stroke(128)
+            line(insertSegment!!.start.position, insertSegment!!.end.position)
         }
     }
 
@@ -120,7 +161,7 @@ class Applet : PApplet()
                 return
             when (mode)
             {
-                Mode.EDIT_WORLD -> activeNode = null
+                Mode.EDIT_WORLD -> { }
                 else -> { }
             }
             field = value
@@ -128,30 +169,58 @@ class Applet : PApplet()
 
     override fun mousePressed()
     {
+        val m = vec(mouseX, mouseY)
         if (mode == Mode.EDIT_WORLD && mouseButton == SELECT_BUTTON)
         {
-            activeSegment = null
-            val m = vec(mouseX, mouseY)
-            val nl = pickNode(world, m, NODE_RADIUS)
-            if (nl != null)
+            updateHover()
+            if (hoverNode != null)
             {
-                activeLoop = nl.first
-                activeNode = nl.second
-                return
+                grabNode = hoverNode
             }
-            val loop = pickLoop(world, m)
-            if (loop != null && loop != activeLoop)
+            else if (hoverSegment != null)
             {
-                activeLoop = loop
-                return
+                grabSegment = hoverSegment
+                insertSegment = null
             }
-            if (activeLoop == null)
+            else if (insertSegment != null)
             {
-                activeLoop = world.addLoop(m)
-                activeNode = activeLoop!!.origin
-                return
+                hoverNode = insertSegment!!.insertNode(m)
+                grabNode = hoverNode
+                insertSegment = null
             }
-            activeNode = pickSegment(activeLoop!!, m).insertNode(m)
+            else if (hoverLoop != null)
+            {
+                activeLoop = hoverLoop
+                grabLoop = hoverLoop
+            }
+            else
+            {
+
+            }
+//
+//
+//            activeSegment = null
+//            val m = vec(mouseX, mouseY)
+//            val nl = pickNode(world, m, NODE_RADIUS)
+//            if (nl != null)
+//            {
+//                activeLoop = nl.first
+//                activeNode = nl.second
+//                return
+//            }
+//            val loop = pickLoop(world, m)
+//            if (loop != null && loop != activeLoop)
+//            {
+//                activeLoop = loop
+//                return
+//            }
+//            if (activeLoop == null)
+//            {
+//                activeLoop = world.addLoop(m)
+//                activeNode = activeLoop!!.origin
+//                return
+//            }
+//            activeNode = pickSegment(activeLoop!!, m).insertNode(m)
         }
         else if (mode == Mode.EDIT_WORLD && mouseButton == CLEAR_BUTTON)
         {
@@ -163,32 +232,32 @@ class Applet : PApplet()
     {
         if (mode == Mode.EDIT_WORLD && mouseButton == SELECT_BUTTON)
         {
-            activeNode?.position?.set(mouseX.toFloat(), mouseY.toFloat())
+            //activeNode?.position?.set(mouseX.toFloat(), mouseY.toFloat())
         }
     }
 
     override fun mouseMoved()
     {
         if (mode == Mode.EDIT_WORLD)
-        {
-            activeNode = null
-            activeSegment = null
-            val m = vec(mouseX, mouseY)
-            val nl = pickNode(world, m, NODE_RADIUS)
-            if (nl != null)
-            {
-                activeLoop = nl.first
-                activeNode = nl.second
-                activeSegment = null
-                return
-            }
-            if (activeLoop == null)
-            {
-                activeLoop = pickLoop(world, m)
-                return
-            }
-            activeSegment = pickSegment(activeLoop!!, m)
-        }
+            updateHover()
+    }
+
+    fun updateHover()
+    {
+        val m = vec(mouseX, mouseY)
+        hoverNode = null
+        hoverSegment = null
+        hoverLoop = null
+
+        hoverNode = pickNode(world, m, NODE_PICK_RADIUS)
+        if (hoverNode != null)
+            return
+
+        hoverSegment = pickSegment(world, m, SEGMENT_PICK_RADIUS)
+        if (hoverSegment != null)
+            return
+
+        hoverLoop = pickLoop(world, m)
     }
 
     fun line(p0: PVector, p1: PVector) { line(p0.x, p0.y, p1.x, p1.y); }

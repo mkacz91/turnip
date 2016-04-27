@@ -25,6 +25,9 @@ class World
         }
     }
 
+    val segments : Iterable<WorldSegment>
+        get() = WorldSegment.segmentLoop(nodes)
+
     fun addLoop(position: PVector) : WorldLoop
     {
         val loop = WorldLoop(WorldNode(position))
@@ -58,7 +61,7 @@ class WorldNode(var position: PVector)
     }
 
     val segmentLoop: Iterable<WorldSegment>
-        get() = nodeLoop.map { n -> WorldSegment(n, n.succ) }
+        get() = WorldSegment.segmentLoop(nodeLoop)
 
     val positionLoop: Iterable<PVector>
         get() = nodeLoop.map { n -> n.position }
@@ -87,6 +90,12 @@ data class WorldSegment(val start: WorldNode, val end: WorldNode)
     fun insertNode(position: PVector) = start.insertSucc(position)
 
     fun distSq(position: PVector) = pointToSegmentDistSq(start.position, end.position, position)
+
+    companion object
+    {
+        fun segmentLoop(nodeLoop: Iterable<WorldNode>)
+            = nodeLoop.map { n -> WorldSegment(n, n.succ) }
+    }
 }
 
 class WorldLoop(val origin: WorldNode)
