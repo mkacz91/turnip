@@ -36,7 +36,12 @@ class World
     }
 }
 
-class WorldNode(var position: PVector)
+abstract class WorldItem()
+{
+    abstract fun moveBy(translation: PVector)
+}
+
+class WorldNode(var position: PVector) : WorldItem()
 {
     var pred: WorldNode = this
     var succ: WorldNode = this
@@ -83,13 +88,24 @@ class WorldNode(var position: PVector)
     }
 
     fun distSq(position: PVector) = distSq(this.position, position)
+
+    override fun moveBy(translation: PVector)
+    {
+        position.add(translation)
+    }
 }
 
-data class WorldSegment(val start: WorldNode, val end: WorldNode)
+class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
 {
     fun insertNode(position: PVector) = start.insertSucc(position)
 
     fun distSq(position: PVector) = pointToSegmentDistSq(start.position, end.position, position)
+
+    override fun moveBy(translation: PVector)
+    {
+        start.moveBy(translation)
+        end.moveBy(translation)
+    }
 
     companion object
     {
@@ -98,7 +114,7 @@ data class WorldSegment(val start: WorldNode, val end: WorldNode)
     }
 }
 
-class WorldLoop(val origin: WorldNode)
+class WorldLoop(val origin: WorldNode) : WorldItem()
 {
     val nodes: Iterable<WorldNode>
         get() = origin.nodeLoop
@@ -110,4 +126,10 @@ class WorldLoop(val origin: WorldNode)
         get() = origin.positionLoop
 
     fun contains(position: PVector) = pointInPolygon(positions, position)
+
+    override fun moveBy(translation: PVector)
+    {
+        for (node in nodes)
+            node.moveBy(translation)
+    }
 }
