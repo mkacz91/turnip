@@ -14,8 +14,14 @@ class Applet : PApplet()
     {
         const val NODE_RADIUS = 10.0f
         const val NODE_HOVER_RADIUS = 12.0f
-        const val SEGMENT_HOVER_RADIUS = 10.0f;
-        const val SEGMENT_INSERT_RADIUS = 120.0f;
+        const val SEGMENT_HOVER_RADIUS = 10.0f
+        const val SEGMENT_INSERT_RADIUS = 120.0f
+        val BACKGROUND_COLOR = rgb(0xE39794)
+        val LOOP_COLOR = rgb(0x91615F)
+        val LOOP_ACTIVE_COLOR = rgb(0x694644)
+        val NODE_HOVER_COLOR = rgb(0xE3D8D8)
+        val NODE_ACTIVE_COLOR = rgb(0xD4B9B8)
+
         val SELECT_BUTTON = PApplet.LEFT
 
         fun pickLoop(world: World, position: PVector)
@@ -54,19 +60,16 @@ class Applet : PApplet()
         dt = (currentMillis - prevMillis) * 0.001f
         prevMillis = currentMillis
 
-        background(color(252, 216, 210))
+        background(BACKGROUND_COLOR)
 
         strokeWeight(2.0f)
         noStroke()
         fill(color(229, 117, 99))
         for (loop in world.loops)
         {
-            val fillColor = when (loop)
-            {
-                hoverItem -> color(255, 0, 0)
-                activeItem -> color(0, 255, 0)
-                else -> color(0, 0, 255)
-            }
+            var fillColor = if (loop == activeItem) LOOP_ACTIVE_COLOR else LOOP_COLOR
+            if (loop == hoverItem)
+                fillColor = lighten(fillColor, 0.1f)
             fill(fillColor)
 
             var nodeCount = 0
@@ -101,24 +104,6 @@ class Applet : PApplet()
                 ellipse(m, NODE_RADIUS)
             }
 
-            noStroke()
-            if (hoverItem is WorldNode)
-            {
-                fill(color(255, 0, 0))
-                ellipse((hoverItem as WorldNode).position, NODE_RADIUS)
-            }
-            if (activeItem != hoverItem && activeItem is WorldNode)
-            {
-                fill(color(0, 255, 0))
-                ellipse((activeItem as WorldNode).position, NODE_RADIUS)
-            }
-
-            noFill()
-            strokeWeight(1.0f)
-            stroke(color(87, 34, 77))
-            for (node in world.nodes)
-                ellipse(node.position, NODE_RADIUS)
-
             strokeWeight(3.0f)
             if (hoverItem is WorldSegment)
             {
@@ -132,6 +117,37 @@ class Applet : PApplet()
                 stroke(255)
                 line(segment.start.position, segment.end.position)
             }
+
+            noStroke()
+            val hoverNode = hoverItem as? WorldNode
+            val activeNode = activeItem as? WorldNode
+            if (hoverNode == activeNode)
+            {
+                if (hoverNode != null)
+                {
+                    fill(rgb(darken(NODE_ACTIVE_COLOR, 0.1f)))
+                    ellipse(hoverNode.position, NODE_RADIUS)
+                }
+            }
+            else
+            {
+                if (hoverNode != null)
+                {
+                    fill(NODE_HOVER_COLOR)
+                    ellipse(hoverNode.position, NODE_RADIUS)
+                }
+                if (activeNode != null)
+                {
+                    fill(NODE_ACTIVE_COLOR)
+                    ellipse(activeNode.position, NODE_RADIUS)
+                }
+            }
+
+            noFill()
+            strokeWeight(1.0f)
+            stroke(color(87, 34, 77))
+            for (node in world.nodes)
+                ellipse(node.position, NODE_RADIUS)
         }
     }
 
@@ -160,8 +176,8 @@ class Applet : PApplet()
         val m = vec(mouseX, mouseY)
         if (mode == Mode.EDIT_WORLD && mouseButton == SELECT_BUTTON)
         {
-            activeItem = null
             updateHover()
+            activeItem = hoverItem
             if (insertSegment != null)
             {
                 hoverItem = insertSegment!!.insertNode(m)
@@ -171,14 +187,6 @@ class Applet : PApplet()
             {
                 hoverItem = world.addLoop(m).origin
             }
-        }
-    }
-
-    override fun mouseReleased()
-    {
-        if (mode == Mode.EDIT_WORLD && mouseButton == SELECT_BUTTON)
-        {
-            activeItem = hoverItem
         }
     }
 
