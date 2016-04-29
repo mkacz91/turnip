@@ -1,6 +1,10 @@
 package mkacz.turnip
 
 import processing.core.PVector
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.io.OutputStream
+import java.io.OutputStreamWriter
 import java.util.*
 import kotlin.collections.*
 import kotlin.collections.Iterator
@@ -33,6 +37,20 @@ class World
         val loop = WorldLoop(WorldNode(position))
         loops.add(loop)
         return loop
+    }
+
+    fun write(stream: OutputStream)
+    {
+        val writer = stream.bufferedWriter()
+        for (loop in loops)
+        {
+            for (position in loop.positions)
+            {
+                writer.write(position.toString())
+                writer.append(' ')
+            }
+            writer.appendln()
+        }
     }
 }
 
