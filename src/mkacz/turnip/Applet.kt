@@ -35,6 +35,7 @@ class Applet : PApplet()
 
     var hoverItem: WorldItem? = null
     var activeItem: WorldItem? = null
+    var showBisectors = true
 
     override fun settings()
     {
@@ -131,6 +132,20 @@ class Applet : PApplet()
                 val segment = activeItem as WorldSegment
                 stroke(255)
                 line(segment.start.position, segment.end.position)
+            }
+        }
+
+        if (showBisectors)
+        {
+            strokeWeight(1.0f)
+            stroke(color(0))
+            for (node in world.nodes)
+            {
+                val bisector = bisector(
+                    span(node.position, node.pred.position),
+                    span(node.position, node.succ.position))
+                bisector.setMag(70f)
+                line(node.position, add(node.position, bisector))
             }
         }
     }

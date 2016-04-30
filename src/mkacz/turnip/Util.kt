@@ -60,6 +60,10 @@ fun lengthSq(u: PVector) : Float
     return u.x * u.x + u.y * u.y;
 }
 
+fun length(u: PVector) = Math.sqrt(lengthSq(u).toDouble()).toFloat()
+
+fun normalized(u: PVector) = mul(u, 1 / length(u))
+
 fun distSq(u: PVector, v: PVector) : Float
 {
     val dx = v.x - u.x;
@@ -123,4 +127,15 @@ fun pointInPolygon(poly: Iterable<PVector>, point: PVector) : Boolean
     }
     processEdge(end, first)
     return result
+}
+
+fun bisector(u: PVector, v: PVector) = bisectorOfNormalized(normalized(u), normalized(v))
+
+fun bisectorOfNormalized(u: PVector, v: PVector) : PVector
+{
+    if (dot(u, v) <= 0)
+        return PVector(v.y - u.y, u.x - v.x)
+    if (per(u, v) <= 0)
+        return PVector(-u.x - v.x, -u.y - v.y)
+    return PVector(u.x + v.x, u.y + v.y)
 }
