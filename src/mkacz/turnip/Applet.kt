@@ -235,16 +235,12 @@ class Applet : PApplet()
 
         val segment = nearestSegment(world, m)
         val segmentDistSq = segment?.distSq(m) ?: Float.POSITIVE_INFINITY
-        if (segmentDistSq <= SEGMENT_HOVER_RADIUS * SEGMENT_HOVER_RADIUS)
-        {
-            hoverItem = segment
-            return
-        }
 
         val loop = pickLoop(world, m)
         if (loop != null)
         {
-            hoverItem = loop
+            hoverItem = if (segmentDistSq <= SEGMENT_HOVER_RADIUS * SEGMENT_HOVER_RADIUS)
+                segment else loop
             return
         }
 
