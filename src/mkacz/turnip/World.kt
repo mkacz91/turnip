@@ -1,10 +1,7 @@
 package mkacz.turnip
 
 import processing.core.PVector
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.io.OutputStream
-import java.io.OutputStreamWriter
+import java.io.*
 import java.util.*
 import kotlin.collections.*
 import kotlin.collections.Iterator
@@ -39,17 +36,32 @@ class World
         return loop
     }
 
-    fun write(stream: OutputStream)
+    fun write(stream: DataOutputStream)
     {
-        val writer = stream.bufferedWriter()
+        stream.writeInt(loops.size)
         for (loop in loops)
         {
+            stream.writeInt(loop.nodes.count())
             for (position in loop.positions)
             {
-                writer.write(position.toString())
-                writer.append(' ')
+                stream.writeFloat(position.x)
+                stream.writeFloat(position.y)
             }
-            writer.appendln()
+        }
+    }
+
+    fun read(stream: DataInputStream)
+    {
+        loops.clear()
+        val loopCount = stream.readInt()
+        for (i in 1..loopCount)
+        {
+            var nodeCount = stream.readInt()
+            if (nodeCount == 0)
+                return
+            var node = addLoop(PVector(stream.readFloat(), stream.readFloat())).origin
+            for (j in 2..nodeCount)
+                node = node.insertSucc(PVector(stream.readFloat(), stream.readFloat()))
         }
     }
 }

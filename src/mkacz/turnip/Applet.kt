@@ -2,6 +2,11 @@ package mkacz.turnip
 
 import processing.core.PApplet
 import processing.core.PVector
+import java.io.DataInputStream
+import java.io.DataOutputStream
+import java.nio.file.FileSystems
+import java.nio.file.Files
+import java.nio.file.Path
 
 fun main(args: Array<String>)
 {
@@ -249,6 +254,25 @@ class Applet : PApplet()
             insertSegment = segment
             return
         }
+    }
+
+    override fun keyPressed() = when (key)
+    {
+        's' ->
+        {
+            val path = FileSystems.getDefault().getPath("world.trp")
+            val stream = Files.newOutputStream(path)
+            world.write(DataOutputStream(stream))
+            stream.close()
+        }
+        'l' ->
+        {
+            val path = FileSystems.getDefault().getPath("world.trp")
+            val stream = Files.newInputStream(path)
+            world.read(DataInputStream(stream))
+            stream.close()
+        }
+        else -> { }
     }
 
     fun line(p0: PVector, p1: PVector) { line(p0.x, p0.y, p1.x, p1.y); }
