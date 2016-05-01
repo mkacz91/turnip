@@ -136,9 +136,7 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
         {
             val u = start.toPred
             val v = start.toSucc
-            if (per(u, v) < 0) // concave (LHS)
-                return bisector(u, v)
-            return lhp(v)
+            return if (per(u, v) < 0) bisector(v, u) else lhp(v)
         }
 
     val endBoundary: PVector
@@ -146,9 +144,7 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
         {
             val u = end.toPred
             val v = end.toSucc
-            if (per(u, v) < 0) // concave (LHS)
-                return bisector(u, v)
-            return rhp(u)
+            return if (per(u, v) < 0) bisector(v, u) else rhp(u)
         }
 
     fun insertNode(position: PVector) = start.insertSucc(position)

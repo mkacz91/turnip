@@ -138,16 +138,14 @@ class Applet : PApplet()
 
         if (mode == Mode.EDIT_WORLD)
         {
-
             if (insertSegment != null)
             {
-                val m = vec(mouseX, mouseY)
                 strokeWeight(1.0f)
                 stroke(128)
                 noFill()
-                line(m, insertSegment!!.start.position)
-                line(m, insertSegment!!.end.position)
-                ellipse(m, NODE_RADIUS)
+                line(mouse, insertSegment!!.start.position)
+                line(mouse, insertSegment!!.end.position)
+                ellipse(mouse, NODE_RADIUS)
             }
 
             strokeWeight(3.0f)
@@ -244,38 +242,42 @@ class Applet : PApplet()
 
     override fun mousePressed()
     {
-        val m = vec(mouseX, mouseY)
         if (mode == Mode.EDIT_WORLD && mouseButton == SELECT_BUTTON)
         {
             updateHover()
             activeItem = hoverItem
             if (insertSegment != null)
             {
-                hoverItem = insertSegment!!.insertNode(m)
+                hoverItem = insertSegment!!.insertNode(mouse)
                 insertSegment = null
             }
             else if (hoverItem == null)
             {
-                hoverItem = world.addLoop(m).origin
+                hoverItem = world.addLoop(mouse).origin
             }
         }
         if (mouseButton == SPAWN_BUTTON)
         {
-            guy.position = vec(mouseX, mouseY)
+            guy.position = mouse
             guy.velocity = vec(0, 0)
         }
     }
+
+    val mouse: PVector
+        get() = vec(mouseX, height - mouseY)
+
+    val dmouse: PVector
+        get() = vec(mouseX - pmouseX, pmouseY - mouseY)
 
     override fun mouseDragged()
     {
         if (mode == Mode.EDIT_WORLD && mouseButton == SELECT_BUTTON)
         {
-            val dm = vec(mouseX - pmouseX, mouseY - pmouseY)
-            hoverItem?.moveBy(dm)
+            hoverItem?.moveBy(dmouse)
         }
         if (mouseButton == SPAWN_BUTTON)
         {
-            guy.position = vec(mouseX, mouseY)
+            guy.position = mouse
             guy.velocity = vec(0, 0)
         }
     }
@@ -288,21 +290,20 @@ class Applet : PApplet()
 
     fun updateHover()
     {
-        val m = vec(mouseX, mouseY)
         hoverItem = null
         insertSegment = null
 
-        val node = pickNode(world, m, NODE_HOVER_RADIUS)
+        val node = pickNode(world, mouse, NODE_HOVER_RADIUS)
         if (node != null)
         {
             hoverItem = node
             return
         }
 
-        val segment = nearestSegment(world, m)
-        val segmentDistSq = segment?.distSq(m) ?: Float.POSITIVE_INFINITY
+        val segment = nearestSegment(world, mouse)
+        val segmentDistSq = segment?.distSq(mouse) ?: Float.POSITIVE_INFINITY
 
-        val loop = pickLoop(world, m)
+        val loop = pickLoop(world, mouse)
         if (loop != null)
         {
             hoverItem = if (segmentDistSq <= SEGMENT_HOVER_RADIUS * SEGMENT_HOVER_RADIUS)
@@ -374,9 +375,9 @@ class Applet : PApplet()
         else -> Unit
     }
 
-    fun line(p0: PVector, p1: PVector) { line(p0.x, p0.y, p1.x, p1.y); }
+    fun line(p0: PVector, p1: PVector) { line(p0.x, height - p0.y, p1.x, height - p1.y); }
 
-    fun ellipse(p: PVector, r: Float) { ellipse(p.x, p.y, r, r); }
+    fun ellipse(p: PVector, r: Float) { ellipse(p.x, height - p.y, r, r); }
 
-    fun vertex(p: PVector) { vertex(p.x, p.y); }
+    fun vertex(p: PVector) { vertex(p.x, height - p.y); }
 }
