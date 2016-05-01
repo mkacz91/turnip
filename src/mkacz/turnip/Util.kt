@@ -63,6 +63,9 @@ fun span(u: PVector, v: PVector) : PVector
     return PVector(v.x - u.x, v.y - u.y);
 }
 
+fun lhp(u: PVector) = PVector(-u.y, u.x)
+fun rhp(u: PVector) = PVector(u.y, -u.x)
+
 fun mid(u: PVector, v: PVector) : PVector
 {
     return PVector(0.5f * (u.x + v.x), 0.5f * (u.y + v.y));
@@ -109,6 +112,12 @@ fun min(x: Float, y: Float) = if (x < y) x else y
 
 fun lerp(x: Int, y: Int, a: Float) = x + (a * (y - x)).toInt()
 
+fun lerp(p0: PVector, p1: PVector, a: Float) : PVector
+{
+    val b = 1 - a
+    return PVector(b * p0.x + a * p1.x, b * p0.y + a * p0.y)
+}
+
 fun pointToSegmentDistSq(a: PVector, b: PVector, p: PVector) : Float
 {
     val ab = span(a, b)
@@ -118,6 +127,13 @@ fun pointToSegmentDistSq(a: PVector, b: PVector, p: PVector) : Float
         sq(per(pa, pb)) / lengthSq(ab)
     else
         min(lengthSq(pa), lengthSq(pb))
+}
+
+fun projectToSegment(a: PVector, b: PVector, p: PVector) : Float
+{
+    val u = span(a, b)
+    val v = span(a, p)
+    return dot(u, v) / lengthSq(u)
 }
 
 fun pointInPolygon(poly: Iterable<PVector>, point: PVector) : Boolean

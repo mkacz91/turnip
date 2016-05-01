@@ -1,7 +1,11 @@
 package mkacz.turnip
 
-/**
- * Created by mkc on 19.04.2016.
- */
-class Guy {
+import processing.core.PVector
+
+class Guy
+{
+    var position = PVector()
+    var velocity = PVector()
+    val radius = 20f
+    var support: WorldSegment? = null
 }

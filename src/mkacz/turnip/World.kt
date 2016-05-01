@@ -75,6 +75,10 @@ class WorldNode(var position: PVector) : WorldItem()
 {
     var pred: WorldNode = this
     var succ: WorldNode = this
+    val toPred: PVector
+        get() = span(position, pred.position)
+    val toSucc: PVector
+        get() = span(position, succ.position)
 
     constructor(position: PVector, pred: WorldNode, succ: WorldNode) : this(position)
     {
@@ -127,9 +131,33 @@ class WorldNode(var position: PVector) : WorldItem()
 
 class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
 {
+    val startBoundary: PVector
+        get()
+        {
+            val u = start.toPred
+            val v = start.toSucc
+            if (per(u, v) < 0) // concave (LHS)
+                return bisector(u, v)
+            return lhp(v)
+        }
+
+    val endBoundary: PVector
+        get()
+        {
+            val u = end.toPred
+            val v = end.toSucc
+            if (per(u, v) < 0) // concave (LHS)
+                return bisector(u, v)
+            return rhp(u)
+        }
+
     fun insertNode(position: PVector) = start.insertSucc(position)
 
     fun distSq(position: PVector) = pointToSegmentDistSq(start.position, end.position, position)
+
+    fun project(position: PVector) = projectToSegment(start.position, end.position, position)
+
+    fun eval(param: Float) = lerp(start.position, end.position, param)
 
     override fun moveBy(translation: PVector)
     {

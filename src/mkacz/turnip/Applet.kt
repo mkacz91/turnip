@@ -6,7 +6,6 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.nio.file.FileSystems
 import java.nio.file.Files
-import java.nio.file.Path
 
 fun main(args: Array<String>)
 {
@@ -26,8 +25,10 @@ class Applet : PApplet()
         val LOOP_ACTIVE_COLOR = rgb(0x694644)
         val NODE_HOVER_COLOR = rgb(0xE3D8D8)
         val NODE_ACTIVE_COLOR = rgb(0xD4B9B8)
+        val G_ACCEL = vec(0, 40)
 
-        val SELECT_BUTTON = PApplet.LEFT
+        val SELECT_BUTTON = LEFT
+        val SPAWN_BUTTON = RIGHT
 
         fun pickLoop(world: World, position: PVector)
             = world.loops.find { l -> l.contains(position) }
@@ -39,7 +40,7 @@ class Applet : PApplet()
             = world.nodes.find { n -> n.distSq(position) <= radius * radius }
     }
 
-    //val guy = Guy()
+    val guy = Guy()
     val world = World()
     var dt = 0.0f
     var insertSegment: WorldSegment? = null
@@ -47,6 +48,7 @@ class Applet : PApplet()
     var hoverItem: WorldItem? = null
     var activeItem: WorldItem? = null
     var showBisectors = true
+    var showBoundaries = false
 
     override fun settings()
     {
@@ -66,11 +68,50 @@ class Applet : PApplet()
         dt = (currentMillis - prevMillis) * 0.001f
         prevMillis = currentMillis
 
+
+        if (mode == Mode.PLAY)
+        {
+            val support = guy.support
+            if (support != null)
+            {
+
+            }
+            else
+            {
+                guy.velocity.add(mul(dt, G_ACCEL))
+                guy.position.add(mul(dt, guy.velocity))
+
+                val radiusSq = sq(guy.radius)
+                for (segment in world.segments)
+                {
+                    val param = segment.project(guy.position)
+                    if (param < 0 || 1 < param)
+                        continue
+                    val projection = segment.eval(param)
+                    val offset = span(projection, guy.position)
+                    val distSq = lengthSq(offset)
+                    if (distSq > radiusSq)
+                        continue
+                    val dist = sqrt(distSq)
+
+                }
+                val support = world.segments.find { it.distSq(guy.position) <= radiusSq }
+                if (support != null)
+                {
+                    guy.support = support
+
+                }
+            }
+        }
+
         background(BACKGROUND_COLOR)
 
-        strokeWeight(2.0f)
         noStroke()
-        fill(color(229, 117, 99))
+        ellipseMode(RADIUS)
+        fill(color(255))
+        ellipse(guy.position, guy.radius)
+
+        strokeWeight(2.0f)
         for (loop in world.loops)
         {
             var fillColor = if (loop == activeItem) LOOP_ACTIVE_COLOR else LOOP_COLOR
@@ -97,7 +138,6 @@ class Applet : PApplet()
 
         if (mode == Mode.EDIT_WORLD)
         {
-            ellipseMode(RADIUS)
 
             if (insertSegment != null)
             {
@@ -156,10 +196,10 @@ class Applet : PApplet()
                 ellipse(node.position, NODE_RADIUS)
         }
 
+        strokeWeight(1.0f)
+        stroke(color(0))
         if (showBisectors)
         {
-            strokeWeight(1.0f)
-            stroke(color(0))
             for (node in world.nodes)
             {
                 val bisector = bisector(
@@ -167,6 +207,17 @@ class Applet : PApplet()
                     span(node.position, node.succ.position))
                 bisector.setMag(70f)
                 line(node.position, add(node.position, bisector))
+            }
+        }
+
+        if (showBoundaries)
+        {
+            for (segment in world.segments)
+            {
+                val startBoundary = segment.startBoundary.setMag(70f)
+                val endBoundary = segment.endBoundary.setMag(70f)
+                line(segment.start.position, add(segment.start.position, startBoundary))
+                line(segment.end.position, add(segment.end.position, endBoundary))
             }
         }
     }
@@ -208,6 +259,11 @@ class Applet : PApplet()
                 hoverItem = world.addLoop(m).origin
             }
         }
+        if (mouseButton == SPAWN_BUTTON)
+        {
+            guy.position = vec(mouseX, mouseY)
+            guy.velocity = vec(0, 0)
+        }
     }
 
     override fun mouseDragged()
@@ -216,6 +272,11 @@ class Applet : PApplet()
         {
             val dm = vec(mouseX - pmouseX, mouseY - pmouseY)
             hoverItem?.moveBy(dm)
+        }
+        if (mouseButton == SPAWN_BUTTON)
+        {
+            guy.position = vec(mouseX, mouseY)
+            guy.velocity = vec(0, 0)
         }
     }
 
@@ -256,8 +317,13 @@ class Applet : PApplet()
         }
     }
 
+    var leftPressed = false
+    var rightPressed = false
+
     override fun keyPressed() = when (key)
     {
+        '1' -> mode = Mode.EDIT_WORLD
+        '2' -> mode = Mode.PLAY
         's' ->
         {
             val path = FileSystems.getDefault().getPath("world.trp")
@@ -272,7 +338,40 @@ class Applet : PApplet()
             world.read(DataInputStream(stream))
             stream.close()
         }
-        else -> { }
+        'b' ->
+        {
+            if (showBisectors)
+            {
+                showBisectors = false
+                showBoundaries = true
+            }
+            else if (showBoundaries)
+            {
+                showBoundaries = false
+            }
+            else
+            {
+                showBisectors = true
+            }
+        }
+        CODED.toChar() -> when (keyCode)
+        {
+            LEFT -> leftPressed = true
+            RIGHT -> rightPressed =  true
+            else -> Unit
+        }
+        else -> Unit
+    }
+
+    override fun keyReleased() = when (key)
+    {
+        CODED.toChar() -> when (keyCode)
+        {
+            LEFT -> leftPressed = false
+            RIGHT -> rightPressed = false
+            else -> Unit
+        }
+        else -> Unit
     }
 
     fun line(p0: PVector, p1: PVector) { line(p0.x, p0.y, p1.x, p1.y); }
