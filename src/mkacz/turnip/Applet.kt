@@ -25,7 +25,7 @@ class Applet : PApplet()
         val LOOP_ACTIVE_COLOR = rgb(0x694644)
         val NODE_HOVER_COLOR = rgb(0xE3D8D8)
         val NODE_ACTIVE_COLOR = rgb(0xD4B9B8)
-        val G_ACCEL = vec(0, 40)
+        val G_ACCEL = vec(0, -40)
 
         val SELECT_BUTTON = LEFT
         val SPAWN_BUTTON = RIGHT
@@ -82,7 +82,15 @@ class Applet : PApplet()
                 guy.velocity.add(mul(dt, G_ACCEL))
                 guy.position.add(mul(dt, guy.velocity))
 
-                val encroachingSegment = world.segments.find { it.encroaches(guy.position, guy.radius) }
+                val support = world.segments.find { it.encroaches(guy.position, guy.radius) }
+                if (support != null)
+                {
+                    guy.support = support
+                    val contact = support.project(guy.position)
+                    val offset = span(contact, guy.position).setMag(guy.radius)
+                    guy.position = add(contact, offset)
+                    guy.velocity = vec(0, 0)
+                }
             }
         }
 
@@ -212,6 +220,13 @@ class Applet : PApplet()
                 line(t, sub(b, v))
             }
         }
+
+        if (mode == Mode.PLAY && guy.support != null)
+        {
+            strokeWeight(2f)
+            stroke(rgb(0xaa1100))
+            line(guy.support!!.start.position, guy.support!!.end.position)
+        }
     }
 
     enum class Mode
@@ -254,6 +269,7 @@ class Applet : PApplet()
         {
             guy.position = mouse
             guy.velocity = vec(0, 0)
+            guy.support = null
         }
     }
 
@@ -273,6 +289,7 @@ class Applet : PApplet()
         {
             guy.position = mouse
             guy.velocity = vec(0, 0)
+            guy.support = null
         }
     }
 

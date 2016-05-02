@@ -175,7 +175,7 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
     }
 
     fun encroaches(position: PVector, radius: Float) =
-        distSq(position) > sq(radius) &&
+        distSq(position) <= sq(radius) &&
         per(startBoundary, span(start.position, position)) <= 0 &&
         per(endBoundary, span(end.position, position)) > 0
 

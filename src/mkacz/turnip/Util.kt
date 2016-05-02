@@ -115,7 +115,7 @@ fun lerp(x: Int, y: Int, a: Float) = x + (a * (y - x)).toInt()
 fun lerp(p0: PVector, p1: PVector, a: Float) : PVector
 {
     val b = 1 - a
-    return PVector(b * p0.x + a * p1.x, b * p0.y + a * p0.y)
+    return PVector(b * p0.x + a * p1.x, b * p0.y + a * p1.y)
 }
 
 fun pointToSegmentDistSq(a: PVector, b: PVector, p: PVector) : Float
@@ -129,12 +129,15 @@ fun pointToSegmentDistSq(a: PVector, b: PVector, p: PVector) : Float
         min(lengthSq(pa), lengthSq(pb))
 }
 
-fun projectToSegment(a: PVector, b: PVector, p: PVector) : Float
+fun projectToSegmentParam(a: PVector, b: PVector, p: PVector) : Float
 {
     val u = span(a, b)
     val v = span(a, p)
     return dot(u, v) / lengthSq(u)
 }
+
+fun projectToSegment(a: PVector, b: PVector, p: PVector)
+    = lerp(a, b, projectToSegmentParam(a, b, p))
 
 fun pointInPolygon(poly: Iterable<PVector>, point: PVector) : Boolean
 {
