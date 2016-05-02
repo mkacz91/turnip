@@ -108,6 +108,8 @@ fun angle(u: PVector) : Float
 
 fun sq(x: Float) = x * x
 
+fun pow(x: Float, y: Float) = Math.pow(x.toDouble(), y.toDouble()).toFloat()
+
 fun min(x: Float, y: Float) = if (x < y) x else y
 
 fun lerp(x: Int, y: Int, a: Float) = x + (a * (y - x)).toInt()

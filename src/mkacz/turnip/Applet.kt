@@ -75,13 +75,24 @@ class Applet : PApplet()
             val support = guy.support
             if (support != null)
             {
+                var sideAccel = 0f
+                if (leftPressed)
+                    sideAccel -= 2000f
+                if (rightPressed)
+                    sideAccel += 2000f
+                val accel = mul(sideAccel, support.direction)
 
+                guy.velocity.add(mul(dt, accel))
+                guy.position.add(mul(dt, guy.velocity))
+
+                guy.velocity.mult(pow(0.001f, dt))
             }
             else
             {
                 guy.velocity.add(mul(dt, G_ACCEL))
                 guy.position.add(mul(dt, guy.velocity))
 
+                @Suppress("NAME_SHADOWING")
                 val support = world.segments.find { it.encroaches(guy.position, guy.radius) }
                 if (support != null)
                 {
