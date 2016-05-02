@@ -174,6 +174,11 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
         end.moveBy(translation)
     }
 
+    fun encroaches(position: PVector, radius: Float) =
+        distSq(position) > sq(radius) &&
+        per(startBoundary, span(start.position, position)) <= 0 &&
+        per(endBoundary, span(end.position, position)) > 0
+
     companion object
     {
         fun segmentLoop(nodeLoop: Iterable<WorldNode>)

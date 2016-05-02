@@ -82,26 +82,7 @@ class Applet : PApplet()
                 guy.velocity.add(mul(dt, G_ACCEL))
                 guy.position.add(mul(dt, guy.velocity))
 
-                val radiusSq = sq(guy.radius)
-                for (segment in world.segments)
-                {
-                    val param = segment.project(guy.position)
-                    if (param < 0 || 1 < param)
-                        continue
-                    val projection = segment.eval(param)
-                    val offset = span(projection, guy.position)
-                    val distSq = lengthSq(offset)
-                    if (distSq > radiusSq)
-                        continue
-                    val dist = sqrt(distSq)
-
-                }
-                val support = world.segments.find { it.distSq(guy.position) <= radiusSq }
-                if (support != null)
-                {
-                    guy.support = support
-
-                }
+                val encroachingSegment = world.segments.find { it.encroaches(guy.position, guy.radius) }
             }
         }
 
