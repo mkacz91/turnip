@@ -201,9 +201,7 @@ class Applet : PApplet()
         {
             for (node in world.nodes)
             {
-                val bisector = bisector(
-                    span(node.position, node.pred.position),
-                    span(node.position, node.succ.position))
+                val bisector = node.bisector
                 bisector.setMag(70f)
                 line(node.position, add(node.position, bisector))
             }

@@ -75,10 +75,14 @@ class WorldNode(var position: PVector) : WorldItem()
 {
     var pred: WorldNode = this
     var succ: WorldNode = this
+
     val toPred: PVector
         get() = span(position, pred.position)
     val toSucc: PVector
         get() = span(position, succ.position)
+
+    val bisector: PVector
+        get() = bisector(toSucc, toPred)
 
     constructor(position: PVector, pred: WorldNode, succ: WorldNode) : this(position)
     {
