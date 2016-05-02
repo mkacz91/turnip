@@ -147,6 +147,15 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
             return if (per(u, v) < 0) bisector(v, u) else rhp(u)
         }
 
+    val center: PVector
+        get() = mid(start.position, end.position)
+
+    val span: PVector
+        get() = span(start.position, end.position)
+
+    val direction: PVector
+        get() = span.normalize()
+
     fun insertNode(position: PVector) = start.insertSucc(position)
 
     fun distSq(position: PVector) = pointToSegmentDistSq(start.position, end.position, position)

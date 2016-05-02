@@ -49,6 +49,7 @@ class Applet : PApplet()
     var activeItem: WorldItem? = null
     var showBisectors = true
     var showBoundaries = false
+    var showSegmentDirection = false
 
     override fun settings()
     {
@@ -218,6 +219,20 @@ class Applet : PApplet()
                 line(segment.end.position, add(segment.end.position, endBoundary))
             }
         }
+
+        if (showSegmentDirection)
+        {
+            for (segment in world.segments)
+            {
+                val u = mul(5f, segment.direction)
+                val v = lhp(u)
+                val c = segment.center
+                val t = add(c, u)
+                val b = sub(c, u)
+                line(t, add(b, v))
+                line(t, sub(b, v))
+            }
+        }
     }
 
     enum class Mode
@@ -355,6 +370,7 @@ class Applet : PApplet()
                 showBisectors = true
             }
         }
+        'd' -> showSegmentDirection = !showSegmentDirection
         CODED.toChar() -> when (keyCode)
         {
             LEFT -> leftPressed = true
