@@ -135,7 +135,12 @@ class WorldNode(var position: PVector) : WorldItem()
 
 class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
 {
-    val startBoundary: PVector
+    val pred: WorldSegment
+        get() = WorldSegment(start.pred, start)
+    val succ: WorldSegment
+        get() = WorldSegment(end, end.succ)
+
+    val startBound: PVector
         get()
         {
             val u = start.toPred
@@ -143,7 +148,7 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
             return if (per(u, v) < 0) bisector(v, u) else lhp(v)
         }
 
-    val endBoundary: PVector
+    val endBound: PVector
         get()
         {
             val u = end.toPred
@@ -174,10 +179,15 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
         end.moveBy(translation)
     }
 
-    fun encroaches(position: PVector, radius: Float) =
-        distSq(position) <= sq(radius) &&
-        per(startBoundary, span(start.position, position)) <= 0 &&
-        per(endBoundary, span(end.position, position)) > 0
+    fun encroaches(position: PVector, radius: Float)
+        = distSq(position) <= sq(radius) && inBounds(position)
+
+    fun inStartBound(position: PVector) = per(startBound, span(start.position, position)) <= 0
+
+    fun inEndBound(position: PVector) = per(endBound, span(end.position, position)) > 0
+
+    fun inBounds(position: PVector) = inStartBound(position) && inEndBound(position)
+
 
     companion object
     {

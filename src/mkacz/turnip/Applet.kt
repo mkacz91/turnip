@@ -72,7 +72,7 @@ class Applet : PApplet()
 
         if (mode == Mode.PLAY)
         {
-            val support = guy.support
+            var support = guy.support
             if (support != null)
             {
                 var sideAccel = 0f
@@ -84,16 +84,27 @@ class Applet : PApplet()
 
                 guy.velocity.add(mul(dt, accel))
                 guy.position.add(mul(dt, guy.velocity))
-
                 guy.velocity.mult(pow(0.001f, dt))
+
+                if (!support.inStartBound(guy.position))
+                    support = support.pred
+                else if (!support.inEndBound(guy.position))
+                    support = support.succ
+                if (support != guy.support)
+                {
+                    guy.support = support
+                    val contact = support.project(guy.position)
+                    val offset = span(contact, guy.position).setMag(guy.radius)
+                    guy.position = add(contact, offset)
+                    guy.velocity = vec(0, 0)
+                }
             }
             else
             {
                 guy.velocity.add(mul(dt, G_ACCEL))
                 guy.position.add(mul(dt, guy.velocity))
 
-                @Suppress("NAME_SHADOWING")
-                val support = world.segments.find { it.encroaches(guy.position, guy.radius) }
+                support = world.segments.find { it.encroaches(guy.position, guy.radius) }
                 if (support != null)
                 {
                     guy.support = support
@@ -211,8 +222,8 @@ class Applet : PApplet()
         {
             for (segment in world.segments)
             {
-                val startBoundary = segment.startBoundary.setMag(70f)
-                val endBoundary = segment.endBoundary.setMag(70f)
+                val startBoundary = segment.startBound.setMag(70f)
+                val endBoundary = segment.endBound.setMag(70f)
                 line(segment.start.position, add(segment.start.position, startBoundary))
                 line(segment.end.position, add(segment.end.position, endBoundary))
             }
