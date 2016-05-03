@@ -133,7 +133,7 @@ class WorldNode(var position: PVector) : WorldItem()
     }
 }
 
-class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
+class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem(), Support
 {
     val pred: WorldSegment
         get() = WorldSegment(start.pred, start)
@@ -171,6 +171,14 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
 
     fun project(position: PVector) = projectToSegment(start.position, end.position, position)
 
+    override fun eval(radius: Float, param: Float) : Support.EvalResult
+    {
+        val direction = direction
+        val position0 = evalBound(startBound, direction, radius)
+        val position1 = evalBound(endBound, direction, radius)
+        return Support.EvalResult(lerp(position0, position1, param), direction)
+    }
+
     fun eval(param: Float) = lerp(start.position, end.position, param)
 
     override fun moveBy(translation: PVector)
@@ -179,7 +187,7 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
         end.moveBy(translation)
     }
 
-    fun encroaches(position: PVector, radius: Float)
+    override fun encroaches(position: PVector, radius: Float)
         = distSq(position) <= sq(radius) && inBounds(position)
 
     fun inStartBound(position: PVector) = per(startBound, span(start.position, position)) <= 0
@@ -188,11 +196,21 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem()
 
     fun inBounds(position: PVector) = inStartBound(position) && inEndBound(position)
 
+    override fun length(radius: Float) : Float
+    {
+        val direction = span
+        var length = length(direction)
+        direction.mult(1 / length)
+        return length - dot(startBound, direction) + dot(endBound, direction)
+    }
 
     companion object
     {
         fun segmentLoop(nodeLoop: Iterable<WorldNode>)
             = nodeLoop.map { n -> WorldSegment(n, n.succ) }
+
+        fun evalBound(bound: PVector, direction: PVector, radius: Float)
+            = sub(bound, mul(dot(bound, direction), direction)).setMag(radius)
     }
 }
 
