@@ -106,6 +106,8 @@ fun angle(u: PVector) : Float
     return PApplet.atan2(u.y, u.x);
 }
 
+fun abs(x: Float) = if (x >= 0) x else -x
+
 fun sq(x: Float) = x * x
 
 fun pow(x: Float, y: Float) = Math.pow(x.toDouble(), y.toDouble()).toFloat()

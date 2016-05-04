@@ -69,49 +69,58 @@ class Applet : PApplet()
         dt = (currentMillis - prevMillis) * 0.001f
         prevMillis = currentMillis
 
-
         if (mode == Mode.PLAY)
         {
-            var support = guy.support
-            if (support != null)
+            var activeSupport = guy.support
+            if (activeSupport != null)
             {
-                var sideAccel = 0f
+                    var accel = 0f
                 if (leftPressed)
-                    sideAccel -= 2000f
+                    accel -= 2000f
                 if (rightPressed)
-                    sideAccel += 2000f
-                val accel = mul(sideAccel, support.direction)
+                    accel += 2000f
+                activeSupport.velocity += dt * accel / activeSupport.length
+                activeSupport.position += dt * activeSupport.velocity
 
-                guy.velocity.add(mul(dt, accel))
-                guy.position.add(mul(dt, guy.velocity))
-                guy.velocity.mult(pow(0.001f, dt))
-
-                if (!support.inStartBound(guy.position))
-                    support = support.pred
-                else if (!support.inEndBound(guy.position))
-                    support = support.succ
-                if (support != guy.support)
+                while (activeSupport!!.position < 0)
                 {
-                    guy.support = support
-                    val contact = support.project(guy.position)
-                    val offset = span(contact, guy.position).setMag(guy.radius)
-                    guy.position = add(contact, offset)
-                    guy.velocity = vec(0, 0)
+                    val newSupport = activeSupport.pred.activate(guy.radius)
+                    val f = activeSupport.length / newSupport.length
+                    newSupport.velocity = f * activeSupport.velocity
+                    newSupport.position = f * activeSupport.position + 1
+                    activeSupport = newSupport
                 }
+                while (activeSupport!!.position > 1)
+                {
+                    val newSupport = activeSupport.succ.activate(guy.radius)
+                    val f = activeSupport.length / newSupport.length
+                    newSupport.velocity = f * activeSupport.velocity
+                    newSupport.position = f * (activeSupport.position - 1)
+                    activeSupport = newSupport
+                }
+
+                val se = activeSupport.eval(activeSupport.position)
+                guy.velocity = mul(activeSupport.velocity * activeSupport.length, se.direcion)
+                guy.position = se.position
+                activeSupport.velocity *= pow(0.001f, dt)
+                guy.support = activeSupport
             }
             else
             {
                 guy.velocity.add(mul(dt, G_ACCEL))
                 guy.position.add(mul(dt, guy.velocity))
 
-                support = world.segments.find { it.encroaches(guy.position, guy.radius) }
+                val support = world.segments.find { it.encroaches(guy.position, guy.radius) }
                 if (support != null)
                 {
-                    guy.support = support
-                    val contact = support.project(guy.position)
-                    val offset = span(contact, guy.position).setMag(guy.radius)
-                    guy.position = add(contact, offset)
-                    guy.velocity = vec(0, 0)
+                    activeSupport = support.activate(guy.radius)
+                    val param = activeSupport.projectParam(guy.position)
+                    activeSupport.position = param
+                    activeSupport.velocity = 0f
+                    val se = activeSupport.eval(param)
+                    guy.support = activeSupport
+                    guy.position = se.position
+                    guy.velocity = mul(dot(guy.velocity, se.direcion), se.direcion)
                 }
             }
         }
@@ -247,7 +256,7 @@ class Applet : PApplet()
         {
             strokeWeight(2f)
             stroke(rgb(0xaa1100))
-            line(guy.support!!.start.position, guy.support!!.end.position)
+            line(guy.support!!.eval(0f).position, guy.support!!.eval(1f).position)
         }
     }
 
@@ -271,6 +280,13 @@ class Applet : PApplet()
             field = value
         }
 
+    fun spawnGuy(position: PVector)
+    {
+        guy.position = position
+        guy.velocity = vec(0, 0)
+        guy.support = null
+    }
+
     override fun mousePressed()
     {
         if (mode == Mode.EDIT_WORLD && mouseButton == SELECT_BUTTON)
@@ -289,9 +305,7 @@ class Applet : PApplet()
         }
         if (mouseButton == SPAWN_BUTTON)
         {
-            guy.position = mouse
-            guy.velocity = vec(0, 0)
-            guy.support = null
+            spawnGuy(mouse)
         }
     }
 
@@ -309,9 +323,7 @@ class Applet : PApplet()
         }
         if (mouseButton == SPAWN_BUTTON)
         {
-            guy.position = mouse
-            guy.velocity = vec(0, 0)
-            guy.support = null
+            spawnGuy(mouse)
         }
     }
 

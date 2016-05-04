@@ -145,7 +145,7 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem(), Supp
         {
             val u = start.toPred
             val v = start.toSucc
-            return if (per(u, v) < 0) bisector(v, u) else lhp(v)
+            return if (per(u, v) < 0) bisector(v, u).normalize() else lhp(v).normalize()
         }
 
     val endBound: PVector
@@ -153,7 +153,7 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem(), Supp
         {
             val u = end.toPred
             val v = end.toSucc
-            return if (per(u, v) < 0) bisector(v, u) else rhp(u)
+            return if (per(u, v) < 0) bisector(v, u).normalize() else rhp(u).normalize()
         }
 
     val center: PVector
@@ -171,25 +171,6 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem(), Supp
 
     fun project(position: PVector) = projectToSegment(start.position, end.position, position)
 
-    override fun projectParam(position: PVector, radius: Float)
-        = supportSegment(radius).projectParam(position)
-
-    override fun eval(radius: Float, param: Float) = supportSegment(radius).eval(param)
-
-    data class SupportSegment(var direction: PVector, var start: PVector, var end: PVector)
-    {
-        fun eval(param: Float) = Support.EvalResult(lerp(start, end, param), direction)
-        fun projectParam(position: PVector) = projectToSegmentParam(start, end, position)
-    }
-    fun supportSegment(radius: Float) : SupportSegment
-    {
-        val direction = direction
-        return SupportSegment(
-                direction,
-                evalBound(startBound, direction, radius),
-                evalBound(endBound, direction, radius))
-    }
-
     fun eval(param: Float) = lerp(start.position, end.position, param)
 
     override fun moveBy(translation: PVector)
@@ -200,6 +181,17 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem(), Supp
 
     override fun encroaches(position: PVector, radius: Float)
         = distSq(position) <= sq(radius) && inBounds(position)
+
+    override fun activate(radius: Float) = object : ActiveSupport(length(radius), radius)
+    {
+        val direction = this@WorldSegment.direction
+        val start = add(this@WorldSegment.start.position, evalBound(startBound, direction, radius))
+        val end = add(this@WorldSegment.end.position, evalBound(endBound, direction, radius))
+        override val pred = this@WorldSegment.pred
+        override val succ = this@WorldSegment.succ
+        override fun eval(param: Float) = SupportEval(lerp(start, end, param), direction)
+        override fun projectParam(position: PVector) = projectToSegmentParam(start, end, position)
+    }
 
     fun inStartBound(position: PVector) = per(startBound, span(start.position, position)) <= 0
 
@@ -221,7 +213,7 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem(), Supp
             = nodeLoop.map { n -> WorldSegment(n, n.succ) }
 
         fun evalBound(bound: PVector, direction: PVector, radius: Float)
-            = sub(bound, mul(dot(bound, direction), direction)).setMag(radius)
+            = mul(radius / abs(per(bound, direction)), bound)
     }
 }
 
