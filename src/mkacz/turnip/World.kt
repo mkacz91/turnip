@@ -171,12 +171,23 @@ class WorldSegment(val start: WorldNode, val end: WorldNode) : WorldItem(), Supp
 
     fun project(position: PVector) = projectToSegment(start.position, end.position, position)
 
-    override fun eval(radius: Float, param: Float) : Support.EvalResult
+    override fun projectParam(position: PVector, radius: Float)
+        = supportSegment(radius).projectParam(position)
+
+    override fun eval(radius: Float, param: Float) = supportSegment(radius).eval(param)
+
+    data class SupportSegment(var direction: PVector, var start: PVector, var end: PVector)
+    {
+        fun eval(param: Float) = Support.EvalResult(lerp(start, end, param), direction)
+        fun projectParam(position: PVector) = projectToSegmentParam(start, end, position)
+    }
+    fun supportSegment(radius: Float) : SupportSegment
     {
         val direction = direction
-        val position0 = evalBound(startBound, direction, radius)
-        val position1 = evalBound(endBound, direction, radius)
-        return Support.EvalResult(lerp(position0, position1, param), direction)
+        return SupportSegment(
+                direction,
+                evalBound(startBound, direction, radius),
+                evalBound(endBound, direction, radius))
     }
 
     fun eval(param: Float) = lerp(start.position, end.position, param)
