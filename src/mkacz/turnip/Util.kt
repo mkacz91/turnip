@@ -63,8 +63,19 @@ fun span(u: PVector, v: PVector) : PVector
     return PVector(v.x - u.x, v.y - u.y);
 }
 
+fun dir(u: PVector, v: PVector) = span(u, v).normalize()
+
+fun rot(u: PVector, a: Float) : PVector
+{
+    val s = sin(a)
+    val c = cos(a)
+    return PVector(c * u.x - s * u.y, s * u.x + c * u.y)
+}
+
 fun lhp(u: PVector) = PVector(-u.y, u.x)
 fun rhp(u: PVector) = PVector(u.y, -u.x)
+fun lhn(u: PVector) = lhp(u).normalize()
+fun rhn(u: PVector) = rhp(u).normalize()
 
 fun mid(u: PVector, v: PVector) : PVector
 {
@@ -106,11 +117,19 @@ fun angle(u: PVector) : Float
     return PApplet.atan2(u.y, u.x);
 }
 
+fun unitAngle(u: PVector, v: PVector) = acos(dot(u, v))
+
 fun abs(x: Float) = if (x >= 0) x else -x
 
 fun sq(x: Float) = x * x
 
 fun pow(x: Float, y: Float) = Math.pow(x.toDouble(), y.toDouble()).toFloat()
+
+fun sin(x: Float) = Math.sin(x.toDouble()).toFloat()
+
+fun cos(x: Float) = Math.cos(x.toDouble()).toFloat()
+
+fun acos(x: Float) = Math.acos(x.toDouble()).toFloat()
 
 fun min(x: Float, y: Float) = if (x < y) x else y
 

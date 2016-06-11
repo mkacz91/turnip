@@ -74,7 +74,7 @@ class Applet : PApplet()
             var activeSupport = guy.support
             if (activeSupport != null)
             {
-                    var accel = 0f
+                var accel = 0f
                 if (leftPressed)
                     accel -= 2000f
                 if (rightPressed)
@@ -84,7 +84,7 @@ class Applet : PApplet()
 
                 while (activeSupport!!.position < 0)
                 {
-                    val newSupport = activeSupport.pred.activate(guy.radius)
+                    val newSupport = activeSupport.support.predSupport.activate(guy.radius)
                     val f = activeSupport.length / newSupport.length
                     newSupport.velocity = f * activeSupport.velocity
                     newSupport.position = f * activeSupport.position + 1
@@ -92,7 +92,7 @@ class Applet : PApplet()
                 }
                 while (activeSupport!!.position > 1)
                 {
-                    val newSupport = activeSupport.succ.activate(guy.radius)
+                    val newSupport = activeSupport.support.succSupport.activate(guy.radius)
                     val f = activeSupport.length / newSupport.length
                     newSupport.velocity = f * activeSupport.velocity
                     newSupport.position = f * (activeSupport.position - 1)
@@ -110,7 +110,7 @@ class Applet : PApplet()
                 guy.velocity.add(mul(dt, G_ACCEL))
                 guy.position.add(mul(dt, guy.velocity))
 
-                val support = world.segments.find { it.encroaches(guy.position, guy.radius) }
+                val support = world.supports.find { it.encroaches(guy.position, guy.radius) }
                 if (support != null)
                 {
                     activeSupport = support.activate(guy.radius)
@@ -120,7 +120,7 @@ class Applet : PApplet()
                     val se = activeSupport.eval(param)
                     guy.support = activeSupport
                     guy.position = se.position
-                    guy.velocity = mul(dot(guy.velocity, se.direcion), se.direcion)
+                    guy.velocity.set(0f, 0f);
                 }
             }
         }
